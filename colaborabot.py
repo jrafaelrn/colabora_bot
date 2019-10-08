@@ -1,8 +1,6 @@
 # Importando as libraries
-
 import rows
 import datetime
-import json
 import csv
 
 from pathlib import Path
@@ -75,39 +73,32 @@ def plan_gs(dia, mes, ano):
     return planilha
 
 
-def plan_csv():
-    """
-    Cria um arquivo local para guardar todas as interações do bot.
-    """
-    pasta_logs = Path(f'logs')
-    arq_log = pasta_logs / f'colaborabot-log-{ANO}-{MES}-{DIA}.csv'
-    if not pasta_logs.exists():
-        pasta_logs.mkdir()
-    arq_log.write_text(data='data_bsb;data_utc;url;orgao;cod_resposta\n', encoding='UTF8')
-    return arq_log
-
-
 def cria_dados(url, portal, resposta):
     """
     Captura as informações de hora e data da máquina, endereço da página e
     resposta recebida e as prepara dentro de uma lista para inserir na tabela.
     """
-
-    momento = str(json.dumps(datetime.datetime.now().isoformat(sep=' ', timespec='seconds'), indent=4, sort_keys=True, default=str))
-    momento_utc = str(json.dumps(datetime.datetime.utcnow().isoformat(sep=' ', timespec='seconds'), indent=4, sort_keys=True, default=str))
+    momento = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%m:%S"))
+    momento_utc = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%m:%S")
     dados = [momento, momento_utc, url, portal, resposta]
     return dados
 
 
-def preenche_csv(arquivo_logs, dados):
+def preenche_csv(resultados):
     """
-    Guarda as ultimas interaçõs do bot no arquivo csv previamente criado.
-    As informações introduzidas são aquelas geradas pela função "cria_dados"
+    Armazena os resultados da última execução do bot em um arquivo CSV.
     """
-    arq_log = Path(arquivo_logs)
-    with open(arq_log, 'a', newline='', encoding='UTF8') as log_csv:
-        escreve_log = csv.writer(log_csv)
-        escreve_log.writerow(dados)
+    pasta_logs = Path("logs")
+    if not pasta_logs.exists():
+        pasta_logs.mkdir()
+
+    arq_log = pasta_logs / f"colaborabot-log-{ANO}-{MES}-{DIA}.csv"
+
+    cabecalho = ["data_bsb", "data_utc", "url", "orgao", "cod_resposta"]
+    with open(arq_log, "w") as csvfile:
+        csv_writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
+        csv_writer.writerow(cabecalho)
+        csv_writer.writerows(resultados)
 
 
 def preenche_tab_gs(planilha, dados):
@@ -133,15 +124,16 @@ def busca_disponibilidade_sites(sites):
     a sua disponibilidade. Caso o código de status
     seja 200 (OK), então ela está disponível para acesso.
     """
+    resultados = []
+
     for row in sites:
         url, arroba, orgao = row.url, row.arroba, row.orgao
-
         for tentativa in range(1, TOTAL_TENTATIVAS+1):
             try:
                 momento = datetime.datetime.now().isoformat(sep=' ', timespec='seconds')
                 resposta = get(url, timeout=30, headers=headers)
                 dados = cria_dados(url=url, portal=orgao, resposta=resposta.status_code)
-                preenche_csv(arquivo_logs=arq_log, dados=dados)
+                resultados.append(dados)
                 if resposta.status_code == STATUS_SUCESSO:
                     print(f'{momento}; O site {url} funcionou corretamente.')
                     break
@@ -149,20 +141,22 @@ def busca_disponibilidade_sites(sites):
                     if tentativa == TOTAL_TENTATIVAS:
                         if not settings.debug:
                             preenche_tab_gs(planilha=planilha_google, dados=dados)
-                        preenche_csv(arquivo_logs=arq_log, dados=dados)
+                        resultados.append(dados)
                         print(f"""{momento}; url: {url}; orgão: {orgao}; resposta: {resposta.status_code}""")
                         if not settings.debug:
                             checar_timelines(mastodon_handler=mastodon_bot, url=url, orgao=orgao)
 
             except (exceptions.ConnectionError, exceptions.Timeout, exceptions.TooManyRedirects) as e:
                 dados = cria_dados(url=url, portal=orgao, resposta=str(e))
+                resultados.append(dados)
                 if not settings.debug:
                     preenche_tab_gs(planilha=planilha_google, dados=dados)
-                preenche_csv(arquivo_logs=arq_log, dados=dados)
                 print(f"""{momento}; url: {url}; orgão: {orgao}; resposta:{str(e)}""")
                 if not settings.debug:
                     checar_timelines(twitter_hander=twitter_bot, mastodon_handler=mastodon_bot, url=url, orgao=orgao)
                 break
+
+    preenche_csv(resultados)
 
 
 if __name__ == '__main__':
@@ -172,7 +166,6 @@ if __name__ == '__main__':
         google_creds = google_api_auth()
         google_drive_creds = google_sshet()
         planilha_google = plan_gs(dia=DIA, mes=MES, ano=ANO)
-    arq_log = plan_csv()
     sites = carregar_dados_site()
     while True:
         busca_disponibilidade_sites(sites)
