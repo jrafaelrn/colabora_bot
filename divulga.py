@@ -23,8 +23,8 @@ def lista_frases(url, orgao):
         f"🤖 Oi, parece que esse site {url} possui problemas de acesso. {orgao} está sabendo disso?",
         f"🤖 Portais da transparência são um direito ao acesso à informação {orgao}, mas parece que {url} está fora do ar.",
         f"🤖 Opa {orgao}, parece que o site {url} não está acessível como deveria. O que está acontecendo?",
-        f"🤖 Tentei acessar o site {url} e não consegui. {orgao} está acontecendo algum problema com essa portal de transparência?"
-]
+        f"🤖 Tentei acessar o site {url} e não consegui. {orgao} está acontecendo algum problema com essa portal de transparência?",
+    ]
     msg_orgao = choice(com_orgao)
     return msg_orgao
 
@@ -38,12 +38,9 @@ def checar_timelines(twitter_hander, mastodon_handler, url, orgao):
 
     mastodon_bot = mastodon_handler
     twitter_bot = twitter_hander
-    urls_postadas = []
     timeline = mastodon_bot.timeline_home(limit=10)
-    for toot in timeline:
-        urls_postadas.append(toot["content"])
-    contem = any(url in toot
-                 for toot in urls_postadas)
+    urls_postadas = [toot["content"] for toot in timeline]
+    contem = any(url in toot for toot in urls_postadas)
     if not contem:
         mastodon_bot.toot(lista_frases(url=url, orgao=orgao))
         twitter_bot.update_status(status=lista_frases(url=url, orgao=orgao))
