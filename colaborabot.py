@@ -14,8 +14,11 @@ from autenticadores import twitter_auth, google_api_auth, masto_auth
 # Parametros de acesso das urls
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) ' + \
-    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/39.0.2171.95 Safari/537.36"
+    )
 }
 
 TOTAL_TENTATIVAS = 10
@@ -27,7 +30,7 @@ DIA = datetime.datetime.now().day
 MES = datetime.datetime.now().month
 ANO = datetime.datetime.now().year
 
-data = '{:02d}/{:02d}/{:02d}'.format(DIA, MES, ANO) # 11/04/2019
+data = "{:02d}/{:02d}/{:02d}".format(DIA, MES, ANO)  # 11/04/2019
 
 
 def criar_tweet(url, orgao):
@@ -39,37 +42,40 @@ def criar_tweet(url, orgao):
 
 def plan_gs(dia, mes, ano):
     """
-    Cria planilha no Google Drive, envia por e-mail e preenche o cabeçalho (data e hora no fuso horário de Brasília,
-    data e hora no UTC, url afetada, órgão responsável e código de resposta do acesso).
-    A planilha criada possui as permissões de leitura para qualquer pessoa com o link, porém somente a conta da API do
-    bot (que não é a mesma conta usada pela equipe) consegue alterar os dados contidos nela.
+    Cria planilha no Google Drive, envia por e-mail e preenche o cabeçalho
+    (data e hora no fuso horário de Brasília, data e hora no UTC, url afetada,
+    órgão responsável e código de resposta do acesso).
+    A planilha criada possui as permissões de leitura para qualquer pessoa com
+    o link, porém somente a conta da API do bot (que não é a mesma conta usada
+    pela equipe) consegue alterar os dados contidos nela.
 
-    Também é acessado uma planilha índice (docs.google.com/spreadsheets/d/1kIwjn2K0XKAOWZLVRBx9lOU5D4TTUanvmhzmdx7bh0w)
+    Também é acessado uma planilha índice
+    (docs.google.com/spreadsheets/d/1kIwjn2K0XKAOWZLVRBx9lOU5D4TTUanvmhzmdx7bh0w)
     e incluído a planilha de logs nela, na segunda tabela.
     """
 
-    lista_planilhas = []
     todas_planilhas = google_drive_creds.list_spreadsheet_files()
+    lista_planilhas = [item["name"] for item in todas_planilhas]
 
-    for item in todas_planilhas:
-        lista_planilhas.append(item['name'])
+    offline_titulo = f"colaborabot-sites-offline-{dia:02d}{mes:02d}{ano:04d}"
 
-    if f'colaborabot-sites-offline-{dia:02d}{mes:02d}{ano:04d}' not in lista_planilhas:
-        planilha = google_drive_creds.create(f'colaborabot-sites-offline-{dia:02d}{mes:02d}{ano:04d}')  # Exemplo de nome final: colaborabot-sites-offline-27022019
+    if offline_titulo not in lista_planilhas:
+        # Exemplo de nome final: colaborabot-sites-offline-27022019
+        planilha = google_drive_creds.create(offline_titulo)
         cabecalho = planilha.get_worksheet(index=0)
-        cabecalho.insert_row(values=['data_bsb', 'data_utc', 'url', 'orgao', 'cod_resposta'])
+        cabecalho.insert_row(values=["data_bsb", "data_utc", "url", "orgao", "cod_resposta"])
 
-        plan_indice = google_drive_creds.open_by_key('1kIwjn2K0XKAOWZLVRBx9lOU5D4TTUanvmhzmdx7bh0w')
+        plan_indice = google_drive_creds.open_by_key("1kIwjn2K0XKAOWZLVRBx9lOU5D4TTUanvmhzmdx7bh0w")
         tab_indice = plan_indice.get_worksheet(index=1)
-        endereco = f'docs.google.com/spreadsheets/d/{planilha.id}/'
+        endereco = f"docs.google.com/spreadsheets/d/{planilha.id}/"
         tab_indice.append_row(values=[data, endereco])
 
     else:
-        planilha = google_drive_creds.open(title=f'colaborabot-sites-offline-{dia:02d}{mes:02d}{ano:04d}')
+        planilha = google_drive_creds.open(title=offline_titulo)
 
     sleep(5)
-    planilha.share(None, perm_type='anyone', role='reader')
-    print(f'https://docs.google.com/spreadsheets/d/{planilha.id}\n')
+    planilha.share(None, perm_type="anyone", role="reader")
+    print(f"https://docs.google.com/spreadsheets/d/{planilha.id}\n")
     return planilha
 
 
@@ -78,8 +84,9 @@ def cria_dados(url, portal, resposta):
     Captura as informações de hora e data da máquina, endereço da página e
     resposta recebida e as prepara dentro de uma lista para inserir na tabela.
     """
-    momento = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%m:%S"))
-    momento_utc = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%m:%S")
+    formato_data = "%Y-%m-%d %H:%m:%S"
+    momento = str(datetime.datetime.now().strftime(formato_data))
+    momento_utc = datetime.datetime.utcnow().strftime(formato_data)
     dados = [momento, momento_utc, url, portal, resposta]
     return dados
 
@@ -127,39 +134,49 @@ def busca_disponibilidade_sites(sites):
     resultados = []
 
     for row in sites:
-        url, arroba, orgao = row.url, row.arroba, row.orgao
-        for tentativa in range(1, TOTAL_TENTATIVAS+1):
+        url, orgao = row.url, row.orgao
+        for tentativa in range(1, TOTAL_TENTATIVAS + 1):
             try:
-                momento = datetime.datetime.now().isoformat(sep=' ', timespec='seconds')
+                momento = datetime.datetime.now().isoformat(sep=" ", timespec="seconds")
                 resposta = get(url, timeout=30, headers=headers)
                 dados = cria_dados(url=url, portal=orgao, resposta=resposta.status_code)
                 resultados.append(dados)
                 if resposta.status_code == STATUS_SUCESSO:
-                    print(f'{momento}; O site {url} funcionou corretamente.')
+                    print(f"{momento}; O site {url} funcionou corretamente.")
                     break
                 else:
                     if tentativa == TOTAL_TENTATIVAS:
                         if not settings.debug:
                             preenche_tab_gs(planilha=planilha_google, dados=dados)
                         resultados.append(dados)
-                        print(f"""{momento}; url: {url}; orgão: {orgao}; resposta: {resposta.status_code}""")
+                        print(f"{momento}; url: {url}; orgão: {orgao}; "
+                              f"resposta: {resposta.status_code}")
                         if not settings.debug:
                             checar_timelines(mastodon_handler=mastodon_bot, url=url, orgao=orgao)
 
-            except (exceptions.ConnectionError, exceptions.Timeout, exceptions.TooManyRedirects) as e:
+            except (
+                exceptions.ConnectionError,
+                exceptions.Timeout,
+                exceptions.TooManyRedirects,
+            ) as e:
                 dados = cria_dados(url=url, portal=orgao, resposta=str(e))
                 resultados.append(dados)
                 if not settings.debug:
                     preenche_tab_gs(planilha=planilha_google, dados=dados)
-                print(f"""{momento}; url: {url}; orgão: {orgao}; resposta:{str(e)}""")
+                print(f"{momento}; url: {url}; orgão: {orgao}; resposta:{str(e)}")
                 if not settings.debug:
-                    checar_timelines(twitter_hander=twitter_bot, mastodon_handler=mastodon_bot, url=url, orgao=orgao)
+                    checar_timelines(
+                        twitter_hander=twitter_bot,
+                        mastodon_handler=mastodon_bot,
+                        url=url,
+                        orgao=orgao,
+                    )
                 break
 
     preenche_csv(resultados)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if not settings.debug:
         mastodon_bot = masto_auth()
         twitter_bot = twitter_auth()
