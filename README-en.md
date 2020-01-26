@@ -1,39 +1,41 @@
 # Colaborabot
 
+### The robot created by [Colaboradados](https://colaboradados.com.br/) to monitor access to governmental public transparency portals.
+
 
 <a href="https://twitter.com/colaboradados"> <img src="colaboradados_twitter_logo.png" width="200"></a>
 
-Bot that monitors the access to government public transparency portals.
-Follow [**@colabora_bot**](https://twitter.com/colabora_bot)
+This repository refers to our bot that monitors governmental public transparency portals. Access and follow it [**here**](https://twitter.com/colabora_bot).
+
+## Stack
+
+- [Python3][https://www.python.org/] the programming language needed to run the bot.
+- [Virtualenv][https://docs.python-guide.org/dev/virtualenvs/] a virtual environment to isolate the packages that will be installed with the bot.
 
 ## Installing the bot
 
-### Settings file
-- Create a file in the root of the project called `.env`, it will be used to save the bot configuration variables.
-- Copy the contents of the `.end.example` file to the newly created `.env` file.
-> Note that this sample file contains the `DEBUG=True` variable, this will disable the bot external dependencies to run smoothly locally.
+### Run locally
 
-### Configuring external dependencies
-For more details on external dependencies visit the [integration file here](/docs/INTEGRACOES-en.md).
+1. Fork the [repository](https://github.com/colaboradados/colabora_bot) to your Github.
+2. Clone the repository by typing `$ git clone https://github.com/<your_github_username>/colabora_bot.git` in the terminal.
+3. Activate your virtual environment and enter the bot's root folder.
+4. Create a file at the root of the project called `.env`, which will be used to save the bot's configuration variables, such as tokens.
+5. Copy the contents of the file `.env.example` to the newly created file `.env`.
+> Note that this example file contains the variable `DEBUG=True`, which will disable the bot's external dependencies to run locally without problems.
+6. Install necessary dependencies with `pip install -r requirements.txt`.
+7. To run the bot, run the command `python colaborabot.py`.
+8. Okay, now just run and contribute!
 
-### Installation time
-
-This code uses Python 3.7. Install [here](https://www.python.org/downloads/).
-For libraries, install them all at once by typing `pip install -r requirements.txt` in your terminal.
-
-### Opening
-
-1. Clone the repository by typing `$ git clone https://github.com/colaboradados/colaboradadosobot` in Gitbash.
-2. Go to the folder where you cloned the repository on your computer.
-3. Okay, now just edit your bot!
+### Configuring external dependencies and tokens
+For more details on external dependencies, visit [the integrations file here](/docs/INTEGRACOES.md).
 
 ### Collaborating with the bot (and being a very nice person)
 
-**Colaboradados** is a nonprofit initiative made by the community with its own help. To help with our database you can resolve our issues or directly editing our csv file.
+**Colaboradados** is a nonprofit initiative made by the community with the help of it. To help with our database you can solve our issues or directly edit our file [`lista_portais.csv`](/data/lista_portais.csv).
 
-Please be aware that our program was created with the Brazilian national scope in mind, so your is - should be - always in Portuguese, where possible. Avoid foreignness and collaborate so that our code is studied by all those interested in transparency.
+Please be aware that our program was created with the Brazilian national scope in mind, so its code is - and should be - always in Portuguese, where possible. Avoid foreignness and collaborate so that our code is studied by all people interested in transparency.
 
-Our project is a gateway for people from various fields to be interested in the participatory techno-civic process, so we believe that the bot should be easy to understand for those who are not familiar with more advanced programming techniques.
+Our project is a gateway for people from various fields to be interested in the participatory techno-civic process, therefore we believe that the bot should be easy to understand for those who are not familiar with more advanced programming techniques.
 
 _Simple is better than complex_
 
