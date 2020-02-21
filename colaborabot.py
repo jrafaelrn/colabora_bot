@@ -34,8 +34,8 @@ MES = datetime.datetime.now().month
 ANO = datetime.datetime.now().year
 
 data = "{:02d}/{:02d}/{:02d}".format(DIA, MES, ANO)  # 11/04/2019
-no_certification = open("bases-sem-certificados.txt", "w")
-excecoes = open("bases-com-excecoes.txt", "w")
+no_certification = open("bases-sem-certificados.txt", "a")
+excecoes = open("bases-com-excecoes.txt", "a")
 
 def criar_tweet(url, orgao):
     """
