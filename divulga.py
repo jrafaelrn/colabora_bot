@@ -31,7 +31,7 @@ def lista_frases(url, orgao):
 
 def checar_timelines(twitter_hander, mastodon_handler, url, orgao):
     """
-    Recupera os 10 últimos toots da conta do Mastodon.
+    Recupera os 10 últimos toots/tweets da conta do Mastodon/Twitter.
     Caso a URL não esteja entre as últimas notificadas, é feita a postagem.
     Feature necessária para não floodar a timeline alheia caso um site fique offline por longos períodos de tempo.
     """
