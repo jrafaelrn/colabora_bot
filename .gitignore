@@ -4,4 +4,6 @@
 venv/
 logs/
 __pycache__/
+bases-com-excecoes.txt
+bases-sem-certificados.txt
 credenciais/colaborabot-gAPI.json

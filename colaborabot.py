@@ -1,15 +1,18 @@
 # Importando as libraries
+import csv
 import rows
 import datetime
-import csv
+import requests
+import http.client
 
 from pathlib import Path
 from time import sleep
-from requests import get, exceptions
 import settings
 
 from divulga import lista_frases, checar_timelines, google_sshet
 from autenticadores import twitter_auth, google_api_auth, masto_auth
+
+http.client._MAXHEADERS = 1000
 
 # Parametros de acesso das urls
 
@@ -21,7 +24,7 @@ headers = {
     )
 }
 
-TOTAL_TENTATIVAS = 10
+TOTAL_TENTATIVAS = 5
 STATUS_SUCESSO = 200
 
 # Guardando informações de hora e data da máquina
@@ -31,7 +34,8 @@ MES = datetime.datetime.now().month
 ANO = datetime.datetime.now().year
 
 data = "{:02d}/{:02d}/{:02d}".format(DIA, MES, ANO)  # 11/04/2019
-
+no_certification = open("bases-sem-certificados.txt", "a")
+excecoes = open("bases-com-excecoes.txt", "a")
 
 def criar_tweet(url, orgao):
     """
@@ -132,47 +136,43 @@ def busca_disponibilidade_sites(sites):
     seja 200 (OK), então ela está disponível para acesso.
     """
     resultados = []
+    last_exception = ""
 
     for row in sites:
         url, orgao = row.url, row.orgao
-        for tentativa in range(1, TOTAL_TENTATIVAS + 1):
+        for tentativa in range(TOTAL_TENTATIVAS):
             try:
-                momento = datetime.datetime.now().isoformat(sep=" ", timespec="seconds")
-                resposta = get(url, timeout=30, headers=headers)
-                dados = cria_dados(url=url, portal=orgao, resposta=resposta.status_code)
-                resultados.append(dados)
-                if resposta.status_code == STATUS_SUCESSO:
-                    print(f"{momento}; O site {url} funcionou corretamente.")
-                    break
+                if last_exception == "SSLError":
+                    resposta = requests.get(url, headers=headers, timeout=60, verify=False)
+                    status_code = resposta.status_code
                 else:
-                    if tentativa == TOTAL_TENTATIVAS:
-                        if not settings.debug:
-                            preenche_tab_gs(planilha=planilha_google, dados=dados)
-                        resultados.append(dados)
-                        print(f"{momento}; url: {url}; orgão: {orgao}; "
-                              f"resposta: {resposta.status_code}")
-                        if not settings.debug:
-                            checar_timelines(mastodon_handler=mastodon_bot, url=url, orgao=orgao)
-
-            except (
-                exceptions.ConnectionError,
-                exceptions.Timeout,
-                exceptions.TooManyRedirects,
-            ) as e:
-                dados = cria_dados(url=url, portal=orgao, resposta=str(e))
-                resultados.append(dados)
+                    resposta = requests.get(url, headers=headers, timeout=60)
+                    status_code = resposta.status_code
+                print("{} - {} - {}".format(orgao, url, status_code))
+                last_exception = ""
+            except requests.exceptions.RequestException as e:
+                print("Tentativa {}:".format(tentativa + 1))
+                print(e)
+                if e.__class__.__name__ == "SSLError":
+                    last_exception = e.__class__.__name__
+                    no_certification.write("{} - {} - {}\n".format(orgao, url, e))
+                    continue
+                elif tentativa < TOTAL_TENTATIVAS - 1:
+                    continue
+                else:
+                    excecoes.write("{} - {} - {}\n".format(orgao, url, e))
+            break
+            if status_code != STATUS_SUCESSO:
+                dados = cria_dados(url=url, portal=orgao, resposta=status_code)
                 if not settings.debug:
                     preenche_tab_gs(planilha=planilha_google, dados=dados)
-                print(f"{momento}; url: {url}; orgão: {orgao}; resposta:{str(e)}")
-                if not settings.debug:
+                    resultados.append(dados)
                     checar_timelines(
                         twitter_hander=twitter_bot,
                         mastodon_handler=mastodon_bot,
                         url=url,
                         orgao=orgao,
                     )
-                break
-
     preenche_csv(resultados)
 
 
@@ -186,4 +186,3 @@ if __name__ == "__main__":
     sites = carregar_dados_site()
     while True:
         busca_disponibilidade_sites(sites)
-        sleep(600)
