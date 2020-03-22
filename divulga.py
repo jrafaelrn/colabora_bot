@@ -1,3 +1,4 @@
+import tweepy
 from autenticadores import google_api_auth
 from random import choice
 import gspread
@@ -43,4 +44,10 @@ def checar_timelines(twitter_hander, mastodon_handler, url, orgao):
     contem = any(url in toot for toot in urls_postadas)
     if not contem:
         mastodon_bot.toot(lista_frases(url=url, orgao=orgao))
-        twitter_bot.update_status(status=lista_frases(url=url, orgao=orgao))
+        try:
+            twitter_bot.update_status(status=lista_frases(url=url, orgao=orgao))
+        except tweepy.TweepError as error:
+            if error.api_code == 187:
+                print('duplicate message')
+            else:
+                raise error
