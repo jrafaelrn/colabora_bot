@@ -11,6 +11,7 @@ import settings
 
 from divulga import lista_frases, checar_timelines, google_sshet
 from autenticadores import twitter_auth, google_api_auth, masto_auth
+from gspread.exceptions import APIError
 
 http.client._MAXHEADERS = 1000
 
@@ -114,9 +115,13 @@ def preenche_tab_gs(planilha, dados):
     """
     Escrevendo na planilha
     """
-    tabela = google_drive_creds.open(planilha.title)
-    planilha = tabela.get_worksheet(index=0)
-    planilha.append_row(values=dados)
+    try:
+        tabela = google_drive_creds.open(planilha.title)
+        planilha = tabela.get_worksheet(index=0)
+        planilha.append_row(values=dados)
+        return True
+    except APIError:
+        return False
 
 
 def carregar_dados_site():
@@ -152,7 +157,9 @@ def busca_disponibilidade_sites(sites):
                 if status_code != STATUS_SUCESSO:
                     dados = cria_dados(url=url, portal=orgao, resposta=status_code)
                     if not settings.debug:
-                        preenche_tab_gs(planilha=planilha_google, dados=dados)
+                        planilha_preenchida = False
+                        while not planilha_preenchida:
+                            planilha_preenchida = preenche_tab_gs(planilha=planilha_google, dados=dados)
                         resultados.append(dados)
                         checar_timelines(
                             twitter_hander=twitter_bot,
